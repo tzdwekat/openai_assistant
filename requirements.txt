@@ -1,0 +1,4 @@
+aiohttp==3.9.5
+openai==1.30.5
+python-dotenv==1.0.1
+tiktoken==0.7.0
