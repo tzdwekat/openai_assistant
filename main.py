@@ -11,6 +11,8 @@ import dotenv
 import re  # for matching endpoint from request URL
 import tiktoken  # for counting tokens
 import time  # for sleeping after rate limit is hit
+import json_stream
+import ast
 from dotenv import load_dotenv
 from openai import OpenAI
 from tenacity import (
@@ -18,34 +20,41 @@ from tenacity import (
     stop_after_attempt,
     wait_random_exponential,
 )  # for exponential backoff
+from functions import completion_with_backoff, reset_conversation
 
 #secrets!!
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 openai.api_key = api_key
 
-
 #initialize connection with openAI
 client = OpenAI()
 
-#get input
-print("\nHello, my name is S.T.I.M. (Shitty Tutor I Made), how can I help you today?\n")
-prompt = input("What would you like to learn?\n\n")
+#Styling
+st.markdown("<h1 style='text-align: center; color: white;'>S.T.I.M. The Tutor</h1>", unsafe_allow_html=True)
+left_co, cent_co,last_co = st.columns(3)
+with cent_co:
+    st.image("./stim_head.png")
+    st.button('Reset Chat', on_click=reset_conversation, use_container_width=True)
+st.divider()
+st.write("Hello, my name is S.T.I.M. (Shitty Tutor I Made), how can I help you today?")
+    
+
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+# Display chat messages from history on app rerun
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
 
-#the brains behind everything (the openAI api calls) eventually parallel prompt entering and rate limiting will be added)
-response = client.chat.completions.create(
-  model="gpt-3.5-turbo",
-  response_format={"type" : "json_object"},
-  messages=[
-    {"role": "system", "content": "You are a fancy, eccentric, and eloquently spoken tutor named S.T.I.M. (which stand for Shitty Tutor I made) with a skill for explainining complex and elementary concepts in simple terms. Where possible use popular teaching methods to improve user experience. You are designed to output JSON and keep response as the only variable in the content section."},
-    {"role": "user", "content": prompt}
-  ]
-)
-
-
-print("\n")
-response_output = json.loads(response.choices[0].message.content)
-print(response_output["content"])
-print("\n")
-
+# React to user input
+if prompt := st.chat_input("How may I assist you?"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    with st.chat_message("assistant"):
+        stream = completion_with_backoff(prompt)
+        response = st.write_stream(stream)
+    st.session_state.messages.append({"role": "assistant", "content": response})
