@@ -12,6 +12,8 @@ import re  # for matching endpoint from request URL
 import tiktoken  # for counting tokens
 import time  # for sleeping after rate limit is hit
 import json_stream
+from io import StringIO 
+import io
 import ast
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -20,7 +22,7 @@ from tenacity import (
     stop_after_attempt,
     wait_random_exponential,
 )  # for exponential backoff
-from functions import completion_with_backoff, reset_conversation
+from functions import completion_with_backoff, reset_conversation, robot_speak
 
 #secrets!!
 load_dotenv()
@@ -56,5 +58,8 @@ if prompt := st.chat_input("How may I assist you?"):
         st.markdown(prompt)
     with st.chat_message("assistant"):
         stream = completion_with_backoff(prompt)
-        response = st.write_stream(stream)
+        stream_dict = json.loads(stream.choices[0].message.content)
+        stream_content = stream_dict["content"]
+        response = st.write(stream_content)
     st.session_state.messages.append({"role": "assistant", "content": response})
+
