@@ -22,7 +22,7 @@ from tenacity import (
     stop_after_attempt,
     wait_random_exponential,
 )  # for exponential backoff
-from functions import completion_with_backoff, reset_conversation, robot_speak
+from functions import completion_with_backoff, reset_conversation
 
 #secrets!!
 load_dotenv()
